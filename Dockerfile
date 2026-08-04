@@ -37,8 +37,8 @@ COPY config/nginx/location.conf /usr/src/nginx/location.d/location.conf
 
 # Allow certificate updates in dev
 RUN if [ "$DEV_BUILD" = 'true' ]; then \
-      echo 'docker ALL=(ALL) NOPASSWD: SETENV: /usr/sbin/update-ca-certificates' >> /etc/sudoers; \
-    fi
+  echo 'docker ALL=(ALL) NOPASSWD: SETENV: /usr/sbin/update-ca-certificates' >> /etc/sudoers; \
+  fi
 
 RUN apt-get update && apt-get install -y build-essential g++\
   libxml2-dev libxslt1-dev zlib1g-dev \
@@ -63,16 +63,3 @@ RUN if [ "$DEV_BUILD" = 'false' ]; then BUNDLER_ARGS='--without development test
 
 RUN mkdir -p tmp
 COPY --chown=docker:docker . $APP_HOME
-
-RUN RAILS_ENV=production \
-  DATABASE_URL=postgres://user:pass@127.0.0.1/does_not_exist_dbname \
-  LTI_KEY=12345 \
-  LTI_SECRET=secret \
-  CANVAS_KEY=1 \
-  CANVAS_SECRET=secret \
-  SECRET_KEY_BASE=fake \
-  bundle exec rake assets:precompile
-
-USER root
-RUN rm /etc/nginx/modules-enabled/50-mod-http-lua.conf
-ENTRYPOINT [ "/usr/src/app/docker-entrypoint.sh" ]
