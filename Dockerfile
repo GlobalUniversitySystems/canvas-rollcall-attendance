@@ -3,7 +3,7 @@ ARG DEV_BUILD='false'
 ENV APP_HOME /usr/src/app/
 
 USER root
-RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+RUN echo "deb https://apt-archive.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
   && curl --silent https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
   && apt-get update -y \
   && apt-get install -y \
@@ -40,11 +40,23 @@ RUN if [ "$DEV_BUILD" = 'true' ]; then \
   echo 'docker ALL=(ALL) NOPASSWD: SETENV: /usr/sbin/update-ca-certificates' >> /etc/sudoers; \
   fi
 
-RUN apt-get update && apt-get install -y build-essential g++\
-  libxml2-dev libxslt1-dev zlib1g-dev \
-  patch git \
-  bzip2 xz-utils \
-  phantomjs
+RUN sed -i 's|http://us-east-1.ec2.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
+  && apt-get update -y \
+  && apt-get install -y --fix-missing \
+  build-essential \
+  g++ \
+  libxml2-dev \
+  libxslt1-dev \
+  zlib1g-dev \
+  patch \
+  git \
+  bzip2 \
+  xz-utils \
+  phantomjs \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 USER docker
 
