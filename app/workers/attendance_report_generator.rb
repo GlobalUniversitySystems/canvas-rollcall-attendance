@@ -50,6 +50,12 @@ class AttendanceReportGenerator
 
   def send_report(email, url, message)
     ReportMailer.attendance_report(email, url, message).deliver_now
+    EmailLog.create(
+      to: email,
+      subject: "attendance_report",
+      body: "url: #{url}, message: #{message}",
+      sent_at: Time.current
+    )
   end
   
   private
