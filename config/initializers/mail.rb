@@ -17,7 +17,7 @@
 
 path = File.join(Rails.root, 'config', 'mail.yml')
 if File.exist?(path)
-  mail_config = YAML.load_file(path)[Rails.env].deep_symbolize_keys
+  mail_config = YAML.load_file(path, aliases: true)[Rails.env].deep_symbolize_keys
   smtp_settings = mail_config[:smtp]
   default_options = mail_config[:default_options]
 else
