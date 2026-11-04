@@ -27,7 +27,7 @@ class AttendanceReport
     @filters = @params[:filters] || {}
     begin
       account_relationship = SyncAccountRelationships.new(@params)
-      account_relationship.delay(queue: "sync_account_relationships").sync
+      account_relationship.sync
     rescue CanvasOauth::CanvasApi::Unauthorized => e
       Rails.logger.error e
     end
@@ -54,7 +54,7 @@ class AttendanceReport
       if course_id.present?
         course = @canvas.get_course(course_id)
         raise AttendanceReport::SisFilterNotFound, "Could not find course with SIS ID #{sis_course_id}" if course.not_found?
-        @course_filter = Course.new(id: course['id'].to_i, sis_id: course['sis_course_id'], course_code: course['course_code'], name: course['name'])
+        @course_filter = Course.new(id: course['id'].to_i, sis_id: course['sis_course_id'], course_code: course['course_code'], name: course['name'], term_name: course['term_name'])
       end
     end
     @course_filter
@@ -121,7 +121,8 @@ class AttendanceReport
           id: course['canvas_course_id'].to_i,
           sis_id: course['course_id'],
           course_code: course['short_name'],
-          name: course['long_name']
+          name: course['long_name'],
+          term_name: course['term_name']
         )
         hash[course.id] = course
       end
@@ -136,7 +137,8 @@ class AttendanceReport
     if course_filter
       @canvas.get_all_course_users(course_filter.id).each do |user|
         student = Student.new(id: user['id'],
-                              name: user['name'])
+                              name: user['name'],
+                              sno: user['sno'])
 
         hash[student.id] = student
       end
@@ -152,7 +154,7 @@ class AttendanceReport
           student = Student.new(
               id: student['canvas_user_id'].to_i,
               name: student['first_name'] + ' ' + student['last_name'],
-              sis_id: student['user_id'])
+              sis_id: student['user_id'], sno: student['sno'])
 
           hash[student.id] = student
         end
@@ -199,6 +201,13 @@ class AttendanceReport
     header.concat @account.badges.map(&:name)
   end
 
+  def new_header
+    header = ["Program", "Course Code", "Course Group", "Course Name", "Student SNO", "Student ID", "Student Name", "Teacher Name", "Class Date", "Attendance"]
+
+    header << "Badges" if @account.badges.length > 0
+    header.concat @account.badges.map(&:name)
+  end
+
   def to_csv
     courses = get_courses
     users = get_users
@@ -207,16 +216,46 @@ class AttendanceReport
     attendance_collection = AttendanceCollection.new(statuses: relevant_statuses, awards: relevant_awards)
 
     CSV.generate do |csv|
-      csv << header
+      csv << new_header
       attendance_collection.each do |attendance|
         teacher_id = attendance.teacher_id || teachers[attendance.course_id]
         next unless users[attendance.student_id] && section_exists?(attendance.section_id)
-        csv << course_columns(courses[attendance.course_id]) +
-            section_columns(attendance.section_id) +
-            user_columns(users[teacher_id]) +
-            user_columns(users[attendance.student_id]) +
+        csv << new_course_columns(courses[attendance.course_id]) +
+            student_columns(users[attendance.student_id]) +
+            teacher_columns(users[teacher_id]) +
             attendance_columns(attendance)
       end
+    end
+  end
+
+  def new_course_columns(course)
+    return Array.new(4) {''} if course.nil?
+
+    begin
+      course_codes = course.name.match(/(\(|\[).+(\)|\])/)&.to_s[1...-1]&.split('-')
+    rescue
+      course_codes = nil
+    end
+    program = course.term_name rescue ''
+    c_code = course_codes[-2] rescue ''
+    c_group = course_codes[-1] rescue ''
+
+    [program, c_code, c_group, course.name]
+  end
+
+  def teacher_columns(user)
+    if user.nil?
+      ['']
+    else
+      [user.name]
+    end
+  end
+
+  def student_columns(user)
+    if user.nil?
+      ['', '', '']
+    else
+      [user.sno, user.id, user.name]
     end
   end
 
@@ -249,12 +288,7 @@ class AttendanceReport
   end
 
   def attendance_columns(attendance)
-    columns = [attendance.class_date, attendance.status_description, attendance.last_updated_at]
-    columns << ''
-    @account.badges.each do |badge|
-      columns << (attendance.badge_ids.include?(badge.id) ? badge.name : '')
-    end
-    columns
+    [attendance.class_date, attendance.status_description]
   end
 
   def get_section(section_id)

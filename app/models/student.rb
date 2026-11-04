@@ -16,7 +16,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
 class Student
-  attr_accessor :id, :name, :sortable_name, :avatar_url, :sis_id, :active
+  attr_accessor :id, :name, :sortable_name, :avatar_url, :sis_id, :active, :sno
 
   def initialize(params)
     params.symbolize_keys!
@@ -26,6 +26,7 @@ class Student
     self.sortable_name = params[:sortable_name]
     self.sis_id = params[:sis_id]
     self.avatar_url = params[:avatar_url]
+    self.sno = params[:sno]
 
     self.active = check_for_active_enrollments(params[:enrollments])
   end
@@ -37,6 +38,7 @@ class Student
       id: id.to_s,
       name: name,
       sortable_name: sortable_name,
+      sno: sno,
       avatar_url: avatar_url,
     }
   end

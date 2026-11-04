@@ -28,7 +28,7 @@ class SyncAccountRelationships
     )
 
     # exit before making any more Canvas API calls if the account is fresh
-    return if primary_roll_call_account.fresh?
+    # return if primary_roll_call_account.fresh?
 
     canvas = CanvasOauth::CanvasApiExtensions.build(
       @params[:canvas_url],
@@ -42,6 +42,9 @@ class SyncAccountRelationships
 
     accounts = [primary_roll_call_account]
     canvas_sub_accounts = canvas.get_account_sub_accounts(primary_roll_call_account.account_id)
+    Rails.logger.info('-----------------------------------------------------')
+    Rails.logger.info("canvas_sub_accounts: #{canvas_sub_accounts}")
+    Rails.logger.info('-----------------------------------------------------')
     primary_roll_call_account.refresh
 
     canvas_sub_accounts.each do |canvas_account|

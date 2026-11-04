@@ -57,7 +57,7 @@ Rails.application.configure do
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies
   # unless we're on cloudgate, which handles those things for us
-  config.force_ssl = ENV['CG_ENVIRONMENT'].nil?
+  # config.force_ssl = ENV['CG_ENVIRONMENT'].nil?
 
   # Set to :debug to see everything in the log.
   config.log_level = :info

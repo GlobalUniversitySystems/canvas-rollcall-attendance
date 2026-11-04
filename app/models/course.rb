@@ -16,7 +16,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
 class Course
-  attr_accessor :id, :account_id, :root_account_id, :sis_id, :course_code, :name
+  attr_accessor :id, :account_id, :root_account_id, :sis_id, :course_code, :name, :term_name
 
   def initialize(params={})
     params.symbolize_keys!
@@ -27,5 +27,6 @@ class Course
     self.sis_id = params[:sis_id]
     self.course_code = params[:course_code]
     self.name = params[:name]
+    self.term_name = params[:term_name]
   end
 end
