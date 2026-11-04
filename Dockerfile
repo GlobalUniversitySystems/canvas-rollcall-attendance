@@ -15,6 +15,7 @@ RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg m
       libqt4-dev \
       libqtwebkit-dev \
       xvfb \
+      redis-server \
     || true ) \
   && apt-get clean \
   && rm -rf \

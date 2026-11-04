@@ -16,7 +16,10 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
 class CourseConfigsController < ApplicationController
-  before_action :can_grade
+  skip_before_action :request_canvas_authentication, :only => [:resubmit_grades]
+  skip_before_action :require_lti_launch, :only => [:resubmit_grades]
+
+  before_action :can_grade, except: [:resubmit_grades]
 
   respond_to :json
 
@@ -41,6 +44,13 @@ class CourseConfigsController < ApplicationController
     else
       head :not_found
     end
+  end
+
+  def resubmit_grades
+    config = CourseConfig.find_by(course_id: params[:course_id])
+    resubmit_all_grades!(config)
+
+    head :ok
   end
 
   protected

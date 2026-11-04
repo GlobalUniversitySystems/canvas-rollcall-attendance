@@ -138,7 +138,7 @@ class AttendanceAssignment
   end
 
   def cache_assignment(assign_json)
-    expiration = 15.minutes.seconds.to_i
+    expiration = 1.second.to_i
     redis.set(cache_key, assign_json, ex: expiration)
   end
 

@@ -16,7 +16,12 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
 class StatusesController < ApplicationController
-  before_action :can_grade
+  API_TOKEN = ENV.fetch('ROLLCALL_STATUSES_API_TOKEN')
+
+  skip_before_action :request_canvas_authentication, :only => [:fetch_for_course, :fetch_recent]
+  skip_before_action :require_lti_launch, :only => [:fetch_for_course, :fetch_recent]
+
+  before_action :can_grade, except: [:fetch_for_course, :fetch_recent]
 
   respond_to :json
 
@@ -31,6 +36,32 @@ class StatusesController < ApplicationController
       respond_with statuses
     else
       not_acceptable
+    end
+  end
+
+  def fetch_for_course
+    course_id = params[:course_id]
+    api_token = params[:api_token]
+
+    if api_token != API_TOKEN
+      render json: "You do not have permissions."
+    elsif !Status.exists?(course_id: course_id)
+      render json: "Invalid course id."
+    else
+      render json: Status.where(course_id: course_id).to_json
+    end
+  end
+
+  def fetch_recent
+    api_token = params[:api_token]
+    date = Date.parse(params[:date])
+
+    if api_token != API_TOKEN
+      render json: "You do not have permissions."
+    elsif date.blank?
+      render json: "Please provide start date."
+    else
+      render json: Status.where("updated_at >= ?", date).to_json
     end
   end
 

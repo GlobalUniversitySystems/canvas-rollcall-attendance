@@ -22,6 +22,10 @@ InstructureRollcall::Application.routes.draw do
 
   resources :statuses
 
+  get '/fetch_for_course', to: 'statuses#fetch_for_course'
+  get '/fetch_recent', to: 'statuses#fetch_recent'
+  get '/resubmit_grades/:course_id', to: 'course_configs#resubmit_grades'
+
   get '/courses/:course_id',   to: 'sections#course', as: 'course'
   get '/sections/:section_id', to: 'sections#show', as: 'section'
   scope '/courses/:course_id' do
