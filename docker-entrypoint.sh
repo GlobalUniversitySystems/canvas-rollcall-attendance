@@ -8,7 +8,7 @@ fi
 COMMAND=$@
 
 if [ "x$COMMAND" = "x" ]; then
-  exec /tini -- bin/startup
+  exec /tini -g -- bin/startup
 fi
 
 exec "$@"

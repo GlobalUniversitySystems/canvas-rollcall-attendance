@@ -39,7 +39,7 @@ class AttendanceReportGenerator
       message = e.message
     rescue => e
       Rails.logger.error "Exception: #{e.class.name} - #{e.message}"
-      notify_user_of_error(params[:email])
+      notify_user_of_error(params[:email], e.inspect)
       raise e
     end
 
@@ -50,15 +50,16 @@ class AttendanceReportGenerator
     required = [:user_id, :canvas_url, :email]
     required.each do |key|
       if params[key].blank?
-        notify_user_of_error(params[:email])
+        notify_user_of_error(params[:email], "Required field #{key} is blank - unable to generate Attendance Report")
         raise "Required field #{key} is blank - unable to generate Attendance Report"
       end
     end
   end
 
-  def self.notify_user_of_error(email)
+  def self.notify_user_of_error(email, e = '')
     unless email.blank?
-      error_message = "There was a problem generating your report. We have been notified of this issue and apologize for the inconvenience."
+      error_message = "There was a problem generating your report! We have been notified of this issue and apologize for the inconvenience. "
+      error_message += e
       ReportMailer.attendance_report(email, nil, error_message).deliver_now
     end
   end

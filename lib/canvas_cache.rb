@@ -79,7 +79,7 @@ module CanvasCache
   def cache_response(key, response)
     if response
       json = response.to_json
-      redis.setex key, 12.hours.to_i, json
+      redis.setex key, 1.second.to_i, json
     end
 
     return json

@@ -78,6 +78,7 @@ class InstructureRollcall.Views.Statuses.StatusView extends Backbone.View
     options = @model.toJSON()
     options.formatted_student_name = @formatStudentName(options.student.name)
     options.escaped_student_name = _.escape(options.student.name)
+    options.sno = _.escape(options.student.sno)
     options.section_name = @sectionName(@model.sectionId())
     options.default_section_id = @indexView.sectionId
     return options

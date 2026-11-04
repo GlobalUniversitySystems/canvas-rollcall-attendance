@@ -33,7 +33,7 @@ module RedisCache
     redis.get(key)
   end
 
-  def cache_value(key, expiration = 60, value)
+  def cache_value(key, expiration = 1, value)
     redis.setex key, expiration, value
   end
 
@@ -45,7 +45,7 @@ module RedisCache
     response = request.call
     return "{}" if response.blank?
     response = response.to_json
-    cache_value key, 1.hours.to_i, response
+    cache_value key, 1.second.to_i, response
     response
   end
 end

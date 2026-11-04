@@ -20,7 +20,7 @@ class Report
   include ActiveModel::Conversion
   extend  ActiveModel::Naming
 
-  DATE_RANGE_MAX_SIZE = 6
+  DATE_RANGE_MAX_SIZE = 31
 
   attr_accessor :attributes,
     :course_id,
