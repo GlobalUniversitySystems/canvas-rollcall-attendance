@@ -20,30 +20,72 @@ class AttendanceReportGenerator
 
   @queue = :attendance_reports
 
+  AUTHENTICATION_ATTEMPTS = 3
+  AUTHENTICATION_RETRY_DELAY = 5
+
   def self.perform(params)
     params = params.with_indifferent_access
 
     check_params!(params)
 
+    url = nil
+    message = nil
+
     begin
-      canvas = CanvasOauth::CanvasApiExtensions.build(
-        params[:canvas_url],
-        params[:user_id],
-        params[:tool_consumer_instance_guid]
-      )
-      report = AttendanceReport.new(canvas, params)
+      report = build_report_with_authentication_retry(params)
+
       csv_string = report.to_csv
       filename = "attendance-#{SecureRandom.uuid}.csv"
       url = AttendanceReportUploader.s3_url(filename, csv_string)
     rescue AttendanceReport::SisFilterNotFound => e
       message = e.message
     rescue => e
-      Rails.logger.error "Exception: #{e.class.name} - #{e.message}"
+      Rails.logger.error(
+        "Attendance report generation failed: " \
+          "#{e.class.name} - #{e.message}\n" \
+          "#{e.backtrace&.first(30)&.join("\n")}"
+      )
+
       notify_user_of_error(params[:email])
-      raise e
+      raise
     end
 
     ReportMailer.attendance_report(params[:email], url, message).deliver_now
+    EmailLog.create(
+      to: params[:email],
+      subject: "attendance_report",
+      body: "url: #{url}, message: #{message}",
+      sent_at: Time.current
+    )
+  end
+
+  def self.build_report_with_authentication_retry(params)
+    attempts = 0
+
+    begin
+      attempts += 1
+
+      canvas = CanvasOauth::CanvasApiExtensions.build(
+        params[:canvas_url],
+        params[:user_id],
+        params[:tool_consumer_instance_guid]
+      )
+
+      AttendanceReport.new(canvas, params)
+    rescue CanvasOauth::CanvasApi::Authenticate => e
+      Rails.logger.warn(
+        "Canvas authentication failed " \
+          "attempt=#{attempts}/#{AUTHENTICATION_ATTEMPTS} " \
+          "user_id=#{params[:user_id]} " \
+          "course_id=#{params[:course_id]} " \
+          "canvas_url=#{params[:canvas_url]}"
+      )
+
+      raise if attempts >= AUTHENTICATION_ATTEMPTS
+
+      sleep AUTHENTICATION_RETRY_DELAY
+      retry
+    end
   end
 
   def self.check_params!(params)

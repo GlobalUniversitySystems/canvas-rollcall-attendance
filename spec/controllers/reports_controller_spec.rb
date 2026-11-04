@@ -19,7 +19,6 @@ require 'spec_helper'
 
 describe ReportsController do
   let(:course_id) { 123 }
-
   let :valid_attrs do
     {
       course_id: course_id,
